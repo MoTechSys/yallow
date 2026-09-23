@@ -1,7 +1,7 @@
 /* متجر أبو طارق — Service Worker (offline-first for static assets) */
-const CACHE = 'abu-tariq-v1';
+const CACHE = 'abu-tariq-v3';
 const ASSETS = [
-  './', './index.html', './assets/css/style.css', './assets/js/main.js',
+  './', './index.html', './assets/css/style.css', './assets/js/main.js', './assets/js/cinema.js', './assets/js/emblem3d.js', './assets/vendor/three.module.js', './assets/vendor/RoomEnvironment.js',
   './assets/img/logo.png', './assets/img/hero.webp', './assets/img/hero-mobile.webp',
   './assets/img/account.webp', './assets/img/uc.webp', './assets/img/xsuit.webp', './assets/img/qr-whatsapp.png'
 ];
