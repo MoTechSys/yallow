@@ -8,7 +8,7 @@
 
   /* ---------- Loader ---------- */
   const loader = $('#loader');
-  const hideLoader = () => loader?.classList.add('hide');
+  const hideLoader = () => { loader?.classList.add('hide'); document.body.classList.remove('is-loading'); };
   addEventListener('load', () => setTimeout(hideLoader, 500));
   setTimeout(hideLoader, 3200);
 
@@ -35,7 +35,7 @@
   addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(onScroll); ticking = true; } }, { passive: true });
   onScroll();
 
-  /* ---------- Mobile menu ---------- */
+  /* ---------- Side drawer ---------- */
   const menuBtn = $('#menuBtn'), menu = $('#menu');
   const setMenu = open => {
     menu.classList.toggle('is-open', open);
@@ -43,10 +43,30 @@
     menuBtn.setAttribute('aria-expanded', open);
     menu.setAttribute('aria-hidden', !open);
     document.body.classList.toggle('menu-open', open);
+    if (navigator.vibrate) navigator.vibrate(8);
   };
   menuBtn?.addEventListener('click', () => setMenu(!menu.classList.contains('is-open')));
-  $$('a', menu).forEach(a => a.addEventListener('click', () => setMenu(false)));
+  $$('[data-close]', menu).forEach(el => el.addEventListener('click', () => setMenu(false)));
+  $$('.drawer__nav a', menu).forEach(a => a.addEventListener('click', () => setMenu(false)));
   addEventListener('keydown', e => e.key === 'Escape' && setMenu(false));
+  // swipe-to-close (RTL: panel on right, swipe right closes)
+  (() => {
+    const panel = $('.drawer__panel'); if (!panel) return;
+    let sx = 0, sy = 0, dragging = false;
+    panel.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging = true; panel.style.transition = 'none'; }, { passive: true });
+    panel.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+      if (Math.abs(dy) > Math.abs(dx)) return;
+      if (dx > 0) panel.style.transform = `translateX(${dx}px)`;
+    }, { passive: true });
+    panel.addEventListener('touchend', e => {
+      dragging = false; panel.style.transition = '';
+      const dx = e.changedTouches[0].clientX - sx;
+      panel.style.transform = '';
+      if (dx > 90) setMenu(false);
+    });
+  })();
 
   /* ---------- Scroll spy (header nav + dock) ---------- */
   const sections = $$('section[id]');
@@ -191,6 +211,95 @@
       if (!isDesktop()) return;
       const y = scrollY; if (y < innerHeight) heroImg.style.translate = `0 ${y * .15}px`;
     }, { passive: true });
+  }
+
+
+  /* ---------- Hero title: word-by-word 3D reveal (Arabic-safe) ---------- */
+  $$('[data-split]').forEach(el => {
+    const words = el.textContent.trim().split(/\s+/);
+    el.textContent = '';
+    words.forEach((w, i) => {
+      const span = document.createElement('span');
+      span.className = 'ch'; span.textContent = w;
+      span.style.transitionDelay = `${.15 + i * .12}s`;
+      el.appendChild(span);
+      if (i < words.length - 1) { const sp = document.createElement('span'); sp.className = 'ch sp'; sp.innerHTML = '&nbsp;'; el.appendChild(sp); }
+    });
+  });
+
+  /* ---------- Live activity feed ---------- */
+  const feed = $('#liveFeed');
+  if (feed) {
+    const names = ['أحمد', 'محمد', 'عبدالله', 'خالد', 'سالم', 'يوسف', 'عمر', 'حسين', 'فهد', 'ماجد', 'علي', 'صالح', 'ياسر', 'هاني', 'وليد'];
+    const cities = ['الحديدة', 'المكلا', 'حضرموت', 'صنعاء', 'عدن', 'تعز', 'إب', 'ذمار', 'مأرب', 'سيئون'];
+    const acts = [
+      { t: 'شحن {uc} شدة', c: 'g', uc: [60, 325, 660, 1800, 3800, 6600] },
+      { t: 'اشترى حساب ببجي', c: '' },
+      { t: 'باع بدلة إكس', c: 'p' },
+      { t: 'شحن {uc} شدة', c: 'g', uc: [3800, 6600, 1800] },
+      { t: 'استلم أمواله مباشرة', c: 'p' },
+    ];
+    const rnd = a => a[Math.floor(Math.random() * a.length)];
+    const mk = () => {
+      const act = rnd(acts), n = rnd(names), c = rnd(cities);
+      const txt = act.t.replace('{uc}', act.uc ? rnd(act.uc) : '');
+      const m = Math.floor(Math.random() * 12) + 1;
+      const el = document.createElement('div');
+      el.className = 'feed-item';
+      el.innerHTML = `<span class="feed-item__av ${act.c}">${n[0]}</span><span class="feed-item__txt"><b>${n} من ${c} — ${txt}</b><small>قبل ${m} دقائق • تمّت بنجاح</small></span><span class="feed-item__ok"><svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></span>`;
+      return el;
+    };
+    const ROW = 62, MAX = 4;
+    let items = [];
+    const layout = () => items.forEach((el, i) => { el.style.transform = `translateY(${i * ROW + 10}px)`; el.style.opacity = i >= MAX ? 0 : 1; });
+    for (let i = 0; i < MAX; i++) items.push(mk());
+    items.forEach(el => feed.appendChild(el)); layout();
+    const push = () => {
+      if (document.hidden) return;
+      const el = mk(); el.style.transform = 'translateY(-60px)'; el.style.opacity = 0;
+      feed.prepend(el); items.unshift(el);
+      requestAnimationFrame(() => requestAnimationFrame(layout));
+      while (items.length > MAX + 1) { const old = items.pop(); setTimeout(() => old.remove(), 800); }
+    };
+    setInterval(push, 3800);
+  }
+
+  /* ---------- Custom cursor ---------- */
+  const cur = $('#cursor');
+  if (cur && matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced) {
+    let x = 0, y = 0, rx = 0, ry = 0;
+    const ring = $('.cursor__ring', cur), dot = $('.cursor__dot', cur);
+    addEventListener('pointermove', e => { x = e.clientX; y = e.clientY; dot.style.transform = `translate(${x}px,${y}px)`; }, { passive: true });
+    const loop = () => { rx += (x - rx) * .18; ry += (y - ry) * .18; ring.style.transform = `translate(${rx}px,${ry}px)`; requestAnimationFrame(loop); };
+    loop();
+    const hov = 'a,button,summary,.uc,.card,.city';
+    document.addEventListener('pointerover', e => cur.classList.toggle('is-hover', !!e.target.closest(hov)));
+    addEventListener('pointerdown', () => cur.classList.add('is-down'));
+    addEventListener('pointerup', () => cur.classList.remove('is-down'));
+    document.addEventListener('mouseleave', () => cur.style.opacity = 0);
+    document.addEventListener('mouseenter', () => cur.style.opacity = 1);
+  }
+
+  /* ---------- Share ---------- */
+  $('#shareBtn')?.addEventListener('click', async () => {
+    const data = { title: 'متجر أبو طارق', text: 'متجر أبو طارق لبيع حسابات ببجي موبايل — الاستلام قبل الدفع، ضمان 15 يوماً', url: location.href };
+    try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(location.href); showToast('تم نسخ رابط الموقع ✓'); } }
+    catch { }
+  });
+
+  /* ---------- Back to top ---------- */
+  const toTop = $('#toTop');
+  if (toTop) {
+    addEventListener('scroll', () => toTop.classList.toggle('show', scrollY > 700), { passive: true });
+    toTop.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  /* ---------- Haptics on key taps (mobile) ---------- */
+  if (navigator.vibrate) $$('.btn--gold,.dock__item,.uc,.flow-tab').forEach(el => el.addEventListener('touchstart', () => navigator.vibrate(6), { passive: true }));
+
+  /* ---------- PWA ---------- */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
   /* ---------- Year ---------- */

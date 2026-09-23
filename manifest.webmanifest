@@ -1,0 +1,20 @@
+{
+  "name": "متجر أبو طارق — حسابات ببجي موبايل",
+  "short_name": "أبو طارق",
+  "description": "الاستلام قبل الدفع • ضمان رسمي 15 يوماً • شحن شدات فوري",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06080e",
+  "theme_color": "#06080e",
+  "icons": [
+    { "src": "assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/img/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "واتساب المتجر", "url": "https://wa.me/967770941666", "icons": [{ "src": "assets/img/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
